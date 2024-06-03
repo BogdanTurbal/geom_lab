@@ -2,36 +2,6 @@
 
 import math as m
 
-def isclose(a, b, rel_tol=1e-04, abs_tol=0.0):
-
-    return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
-
-def Intersection(S1x, S1y, D1x, D1y, S2x, S2y, D2x, D2y):
-
-    if ((D1y - S1y) * (S2x - D2x) - (D2y - S2y) * (S1x - D1x)) == 0:
-        return [None, None]
-    else:
-        x = ((S2x - D2x) * (((D1y - S1y) * (S1x) + (S1x - D1x) * (S1y))) - (S1x - D1x) * ((D2y - S2y) * (S2x) + (S2x - D2x) * (S2y))) / ((D1y - S1y) * (S2x - D2x) - (D2y - S2y) * (S1x - D1x))
-        y = ((D1y - S1y) * ((D2y - S2y) * (S2x) + (S2x - D2x) * (S2y)) - (D2y - S2y) * (((D1y - S1y) * (S1x) + (S1x - D1x) * (S1y)))) / ((D1y - S1y) * (S2x - D2x) - (D2y - S2y) * (S1x - D1x))
-        return [x,y]
-
-def parallel(seg1,seg2):
-
-    if Intersection(seg1[0][0],seg1[0][1],seg1[1][0], seg1[1][1], seg2[0][0],seg2[0][1],seg2[1][0], seg2[1][1])==[None,None]:
-        return True
-    return False
-
-def orient(startP, endP, pt):
-
-    orientation= (((startP[0]-pt[0])*(endP[1]-pt[1]))-((startP[1]-pt[1])*(endP[0]-pt[0])))
-
-    if orientation<0:
-        return -1
-    elif orientation>0:
-        return 1
-    else:
-        return 0
-
 def isOnSeg(startP, endP, pt):
 
     if isclose(startP[0],endP[0]):
@@ -75,43 +45,6 @@ def distance(p1, p2):
 def midpoint(startPt, endPt):
 
     return [(startPt[0]+endPt[0])/2, (startPt[1]+endPt[1])/2]
-
-def pointInsidePolygon(pt, edges, vertices):
-
-    seg = [pt,[10000, pt[1]]]
-    intersCount=0
-    inters=[]
-    for ei in range(len(edges)):
-        inter = Intersection(edges[ei][0][0],edges[ei][0][1],edges[ei][1][0],edges[ei][1][1],seg[0][0],seg[0][1],seg[1][0],seg[1][1])
-
-        if isOnSeg(edges[ei][0],edges[ei][1],pt):
-            return True
-        if inter!=[None,None]:
-            if isOnSeg(seg[0],seg[1],inter) and isOnSeg(edges[ei][0],edges[ei][1],inter):
-                if inter not in inters:
-                    if inter not in vertices:
-                        inters.append(inter)
-                        intersCount+=1
-                    else:
-                        if edges[ei][0]==inter:
-                            if (edges[(ei-1)%len(edges)][0][1]>pt[1] and edges[(ei)%len(edges)][1][1]<pt[1])\
-                                or (edges[(ei-1)%len(edges)][0][1]<pt[1] and edges[(ei)%len(edges)][1][1]>pt[1]):
-                                inters.append(inter)
-                                intersCount += 1
-                        elif edges[ei][1]==inter:
-                            if (edges[(ei+1)%len(edges)][1][1]>pt[1] and edges[(ei)%len(edges)][0][1]<pt[1])\
-                                or (edges[(ei-1)%len(edges)][1][1]<pt[1] and edges[(ei)%len(edges)][0][1]>pt[1]):
-                                inters.append(inter)
-                                intersCount += 1
-        else:
-            if edges[(ei-1)%len(edges)][0][1]>pt[1] and edges[(ei+1)%len(edges)][1][1]>pt[1]:
-                intersCount-=2
-            elif edges[(ei-1)%len(edges)][0][1]<pt[1] and edges[(ei+1)%len(edges)][1][1]<pt[1]:
-                intersCount-=2
-    if intersCount%2==0:
-        return False
-    else:
-        return True
 
 
 def computeVisibility(vertices, vertex):
@@ -246,3 +179,72 @@ def computeVisibility(vertices, vertex):
             invisilbe_edges.append([V,prevV])
             prevV = V
     return visibility
+
+
+def isclose(a, b, rel_tol=1e-04, abs_tol=0.0):
+
+    return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
+def Intersection(S1x, S1y, D1x, D1y, S2x, S2y, D2x, D2y):
+
+    if ((D1y - S1y) * (S2x - D2x) - (D2y - S2y) * (S1x - D1x)) == 0:
+        return [None, None]
+    else:
+        x = ((S2x - D2x) * (((D1y - S1y) * (S1x) + (S1x - D1x) * (S1y))) - (S1x - D1x) * ((D2y - S2y) * (S2x) + (S2x - D2x) * (S2y))) / ((D1y - S1y) * (S2x - D2x) - (D2y - S2y) * (S1x - D1x))
+        y = ((D1y - S1y) * ((D2y - S2y) * (S2x) + (S2x - D2x) * (S2y)) - (D2y - S2y) * (((D1y - S1y) * (S1x) + (S1x - D1x) * (S1y)))) / ((D1y - S1y) * (S2x - D2x) - (D2y - S2y) * (S1x - D1x))
+        return [x,y]
+
+def parallel(seg1,seg2):
+
+    if Intersection(seg1[0][0],seg1[0][1],seg1[1][0], seg1[1][1], seg2[0][0],seg2[0][1],seg2[1][0], seg2[1][1])==[None,None]:
+        return True
+    return False
+
+def orient(startP, endP, pt):
+
+    orientation= (((startP[0]-pt[0])*(endP[1]-pt[1]))-((startP[1]-pt[1])*(endP[0]-pt[0])))
+
+    if orientation<0:
+        return -1
+    elif orientation>0:
+        return 1
+    else:
+        return 0
+    
+    
+def pointInsidePolygon(pt, edges, vertices):
+
+    seg = [pt,[10000, pt[1]]]
+    intersCount=0
+    inters=[]
+    for ei in range(len(edges)):
+        inter = Intersection(edges[ei][0][0],edges[ei][0][1],edges[ei][1][0],edges[ei][1][1],seg[0][0],seg[0][1],seg[1][0],seg[1][1])
+
+        if isOnSeg(edges[ei][0],edges[ei][1],pt):
+            return True
+        if inter!=[None,None]:
+            if isOnSeg(seg[0],seg[1],inter) and isOnSeg(edges[ei][0],edges[ei][1],inter):
+                if inter not in inters:
+                    if inter not in vertices:
+                        inters.append(inter)
+                        intersCount+=1
+                    else:
+                        if edges[ei][0]==inter:
+                            if (edges[(ei-1)%len(edges)][0][1]>pt[1] and edges[(ei)%len(edges)][1][1]<pt[1])\
+                                or (edges[(ei-1)%len(edges)][0][1]<pt[1] and edges[(ei)%len(edges)][1][1]>pt[1]):
+                                inters.append(inter)
+                                intersCount += 1
+                        elif edges[ei][1]==inter:
+                            if (edges[(ei+1)%len(edges)][1][1]>pt[1] and edges[(ei)%len(edges)][0][1]<pt[1])\
+                                or (edges[(ei-1)%len(edges)][1][1]<pt[1] and edges[(ei)%len(edges)][0][1]>pt[1]):
+                                inters.append(inter)
+                                intersCount += 1
+        else:
+            if edges[(ei-1)%len(edges)][0][1]>pt[1] and edges[(ei+1)%len(edges)][1][1]>pt[1]:
+                intersCount-=2
+            elif edges[(ei-1)%len(edges)][0][1]<pt[1] and edges[(ei+1)%len(edges)][1][1]<pt[1]:
+                intersCount-=2
+    if intersCount%2==0:
+        return False
+    else:
+        return True
