@@ -1,16 +1,20 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog
+import numpy as np
 import pol_vis
-import pltri
+import polytri
 import mcoloring
+from gen_rand import get_orthog_polygon, remove_collinear_vertices
+from gen_rand_2 import get_orthog_polygon_n
+
 
 class ArtGalleryApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Art Gallery Problem")
-        self.root.geometry("720x512")
-        self.canvas = tk.Canvas(self.root, bg="white", width=720, height=512)
-        self.canvas.pack(fill=tk.BOTH, expand=True)
+        self.root.geometry("1000x512")  
+        self.canvas = tk.Canvas(self.root, bg="white", width=800, height=512)
+        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         self.init_ui()
 
@@ -36,13 +40,13 @@ class ArtGalleryApp:
         self.status_var = tk.StringVar()
         self.label1_var = tk.StringVar()
         self.label2_var = tk.StringVar()
-        
+
         self.status_label = tk.Label(self.root, textvariable=self.status_var, anchor='w', bg="white")
         self.status_label.pack(side=tk.TOP, fill=tk.X)
-        
+
         self.label1 = tk.Label(self.root, textvariable=self.label1_var, anchor='w', bg="white")
         self.label1.pack(side=tk.BOTTOM, fill=tk.X)
-        
+
         self.label2 = tk.Label(self.root, textvariable=self.label2_var, anchor='w', bg="white")
         self.label2.pack(side=tk.BOTTOM, fill=tk.X)
 
@@ -51,13 +55,44 @@ class ArtGalleryApp:
         self.status_var.set("Start by building a polygon or loading a polygon from a file")
 
         self.canvas.bind("<Button-1>", self.on_left_click)
-        self.root.bind("<space>", self.load_polygon)
         self.root.bind("<Return>", self.on_enter)
         self.root.bind("<Right>", self.on_right)
         self.root.bind("<Left>", self.on_left)
         self.root.bind("<Up>", self.on_up)
         self.root.bind("<Down>", self.on_down)
         self.root.bind("<BackSpace>", self.on_backspace)
+
+        self.create_menu()
+
+    def create_menu(self):
+        menu_frame = tk.Frame(self.root, width=280, bg='lightgrey', bd=0)
+        menu_frame.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.text_field = tk.Text(menu_frame, height=5, width=30)
+        self.text_field.pack(pady=10)
+
+        display_button = tk.Button(menu_frame, text="Display", command=self.display_points)
+        display_button.pack(pady=5)
+
+        vertices_label = tk.Label(menu_frame, text="Number of vertices for random orthogonal polygon:", bg='lightgrey')
+        vertices_label.pack(pady=5)
+
+        self.vertices_entry = tk.Entry(menu_frame)
+        self.vertices_entry.pack(pady=5)
+        self.vertices_entry.insert(0, "0")
+
+        random_ortho_button = tk.Button(menu_frame, text="Plot Random Orthogonal", command=self.plot_random_orthogonal)
+        random_ortho_button.pack(pady=5)
+
+        self.plot_orthogonal_var = tk.IntVar()
+        plot_orthogonal_check = tk.Checkbutton(menu_frame, text="Plot Orthogonal", variable=self.plot_orthogonal_var)
+        plot_orthogonal_check.pack(pady=5)
+
+        clear_button = tk.Button(menu_frame, text="Clear", command=self.clear_canvas)
+        clear_button.pack(pady=5)
+
+        hello_world_label = tk.Label(menu_frame, text="", anchor='w', justify='left', bg='lightgrey')
+        hello_world_label.pack(pady=10, fill=tk.BOTH, expand=True)
 
     def _intersection(self, P1, P2, P3):
         return (P3[1] - P1[1]) * (P2[0] - P1[0]) > (P2[1] - P1[1]) * (P3[0] - P1[0])
@@ -100,7 +135,8 @@ class ArtGalleryApp:
             self.display_status(f"Visibility for variation {self.currVariationDisplayed + 1}'s guard no. {guard} out of {len(variation)}")
 
     def process(self):
-        gen = pltri.triangulate_poly(self.pts)
+        #self.pts = remove_collinear_vertices(self.pts)
+        gen = polytri.triangulate_poly(self.pts)
         adj_matrix = [[0 for __ in range(self.count)] for _ in range(self.count)]
 
         for x in gen:
@@ -196,6 +232,15 @@ class ArtGalleryApp:
             self.display_status("Continue adding vertices of the polygon, or press 'ENTER' to complete the Polygon")
 
             intersection = False
+            if self.pts:
+                last_pt = self.pts[-1][:2]
+                if self.plot_orthogonal_var.get() == 1:
+                    horizontal_pt = (event.x, last_pt[1])
+                    vertical_pt = (last_pt[0], event.y)
+                    distance_horizontal = np.linalg.norm(np.array(horizontal_pt) - np.array((event.x, event.y)))
+                    distance_vertical = np.linalg.norm(np.array(vertical_pt) - np.array((event.x, event.y)))
+                    event.x, event.y = horizontal_pt if distance_horizontal < distance_vertical else vertical_pt
+
             for i in range(len(self.pts) - 2):
                 if self.find_intersection(event.x, event.y, self.pts[-1][0], self.pts[-1][1], self.pts[i][0], self.pts[i][1], self.pts[i + 1][0], self.pts[i + 1][1]):
                     intersection = True
@@ -274,6 +319,7 @@ class ArtGalleryApp:
                 self.display_status("Cannot create simple polygon. Vertex doesn't produce a simple polygon.")
 
     def on_enter(self, event):
+        self.root.focus()
         if self.lock == 1:
             self.process()
             self.processed = 1
@@ -367,6 +413,94 @@ class ArtGalleryApp:
             self.display_variation(self.variations[self.validColors[self.currVariationDisplayed]], self.guardSelected)
 
     def on_backspace(self, event):
+        self.clear_canvas()
+
+    def display_points(self):
+        self.clear_canvas()
+        try:
+            points = eval(self.text_field.get("1.0", tk.END).strip())
+            if not all(isinstance(point, tuple) and len(point) == 2 for point in points):
+                raise ValueError
+            self.pts = [[x, y, i] for i, (x, y) in enumerate(points)]
+            self.points = [[x, y] for x, y in points]
+            self.count = len(self.pts)
+            self.draw_polygon()
+            self.on_enter(None)
+
+            self.display_label1("Run (ENTER), Run step-by-step automatically (SPACE), Run step-by-step manually (RIGHT),")
+            self.display_label2("Reset (BACKSPACE)")
+            self.display_status("Choose an option to run the Algorithm")
+            intersection = False
+            for i in range(1, len(self.pts) - 2):
+                if self.find_intersection(self.pts[-1][0], self.pts[-1][1], self.pts[0][0], self.pts[0][1], self.pts[i][0], self.pts[i][1], self.pts[i + 1][0], self.pts[i + 1][1]):
+                    intersection = True
+                    break
+
+            if not intersection:
+                self.canvas.create_line(self.pts[-1][:2], self.pts[0][:2], fill="blue")
+                self.lock = 1
+            else:
+                self.display_status("Cannot insert this vertex as it doesn't produce a simple polygon. Please try again.")
+
+            self.process()
+            self.processed = 1
+            self.stepsFinish = 1
+            self.display_variation(self.variations[self.validColors[self.currVariationDisplayed]], self.guardSelected)
+        except Exception as e:
+            self.display_status("Invalid input format. Please enter points as [(x1, y1), (x2, y2), ...]")
+            
+    def is_convertible_to_int(s):
+        try:
+            int(s)
+            return True
+        except ValueError:
+            return False
+    
+    def plot_random_orthogonal(self):
+        self.clear_canvas()
+        try:
+            #print(self.vertices_entry.get())
+
+            num_vertices = int(self.vertices_entry.get())
+            
+            if num_vertices <= 0:
+                print('koko')
+                vertices = get_orthog_polygon()
+                print(vertices)
+            else:
+                print('heh')
+                vertices = get_orthog_polygon_n(int(num_vertices))
+                print(vertices)
+                
+            self.pts = [[x, y, i] for i, (x, y) in enumerate(vertices)]
+            self.points = [[x, y] for x, y in vertices]
+            self.count = len(self.pts)
+            self.draw_polygon()
+            self.on_enter(None)
+
+            self.display_label1("Run (ENTER), Run step-by-step automatically (SPACE), Run step-by-step manually (RIGHT),")
+            self.display_label2("Reset (BACKSPACE)")
+            self.display_status("Choose an option to run the Algorithm")
+            intersection = False
+            for i in range(1, len(self.pts) - 2):
+                if self.find_intersection(self.pts[-1][0], self.pts[-1][1], self.pts[0][0], self.pts[0][1], self.pts[i][0], self.pts[i][1], self.pts[i + 1][0], self.pts[i + 1][1]):
+                    intersection = True
+                    break
+
+            if not intersection:
+                self.canvas.create_line(self.pts[-1][:2], self.pts[0][:2], fill="blue")
+                self.lock = 1
+            else:
+                self.display_status("Cannot insert this vertex as it doesn't produce a simple polygon. Please try again.")
+
+            self.process()
+            self.processed = 1
+            self.stepsFinish = 1
+            self.display_variation(self.variations[self.validColors[self.currVariationDisplayed]], self.guardSelected)
+        except Exception as e:
+            self.display_status("Error in generating orthogonal polygon.")
+
+    def clear_canvas(self):
         self.canvas.delete("all")
         self.lock = 0
         self.pts = []
@@ -389,6 +523,7 @@ class ArtGalleryApp:
         self.display_status("Start by building a polygon or loading a polygon from a file")
         self.display_label1("Place first point (Left Click), Load Polygon from file (Space)")
         self.display_label2("")
+
 
 if __name__ == "__main__":
     root = tk.Tk()

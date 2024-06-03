@@ -3,9 +3,11 @@
 import math as m
 
 def isclose(a, b, rel_tol=1e-04, abs_tol=0.0):
+
     return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 def Intersection(S1x, S1y, D1x, D1y, S2x, S2y, D2x, D2y):
+
     if ((D1y - S1y) * (S2x - D2x) - (D2y - S2y) * (S1x - D1x)) == 0:
         return [None, None]
     else:
@@ -14,11 +16,13 @@ def Intersection(S1x, S1y, D1x, D1y, S2x, S2y, D2x, D2y):
         return [x,y]
 
 def parallel(seg1,seg2):
+
     if Intersection(seg1[0][0],seg1[0][1],seg1[1][0], seg1[1][1], seg2[0][0],seg2[0][1],seg2[1][0], seg2[1][1])==[None,None]:
         return True
     return False
 
 def orient(startP, endP, pt):
+
     orientation= (((startP[0]-pt[0])*(endP[1]-pt[1]))-((startP[1]-pt[1])*(endP[0]-pt[0])))
 
     if orientation<0:
@@ -29,6 +33,7 @@ def orient(startP, endP, pt):
         return 0
 
 def isOnSeg(startP, endP, pt):
+
     if isclose(startP[0],endP[0]):
         if isclose(pt[0],startP[0]):
             if startP[1]>=pt[1] and pt[1]>=endP[1]:
@@ -64,12 +69,15 @@ def isOnSeg(startP, endP, pt):
         return False
 
 def distance(p1, p2):
+
     return m.sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2),1
 
 def midpoint(startPt, endPt):
+
     return [(startPt[0]+endPt[0])/2, (startPt[1]+endPt[1])/2]
 
 def pointInsidePolygon(pt, edges, vertices):
+
     seg = [pt,[10000, pt[1]]]
     intersCount=0
     inters=[]
@@ -107,6 +115,7 @@ def pointInsidePolygon(pt, edges, vertices):
 
 
 def computeVisibility(vertices, vertex):
+
     iV = vertices.index(vertex)
     VsTemp = []
     VsTemp.extend(vertices[iV+1:len(vertices)])
@@ -237,4 +246,3 @@ def computeVisibility(vertices, vertex):
             invisilbe_edges.append([V,prevV])
             prevV = V
     return visibility
-
